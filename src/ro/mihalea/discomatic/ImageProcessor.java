@@ -19,6 +19,9 @@ public class ImageProcessor {
     public final static int FILTER_BOX = 0;
     public final static int FILTER_GAUSSIAN = 1;
     public final static int FILTER_SOBEL = 2;
+    public final static int FILTER_THRESHOLD = 3;
+
+    private final static int THRESHOLD = 200;
 
     private final static float[] BLUR_DATA = new float[] {
             1/9f, 1/9f, 1/9f,
@@ -68,6 +71,9 @@ public class ImageProcessor {
             case FILTER_SOBEL:
                 sobel();
                 break;
+            case FILTER_THRESHOLD:
+                threshold();
+                break;
         }
     }
 
@@ -97,13 +103,18 @@ public class ImageProcessor {
             }
     }
 
-    private int avgColors(int a, int b) {
-        int red = ((a >> 16) & 0xff) + ((b >> 16) & 0xff);
-        int green = ((a >> 8) & 0xff) + ((b >> 8) & 0xff);
-        int blue = (a & 0xff) + (b & 0xff);
-        int color = 0xff << 24 | red/2 << 16 | green/2 << 8 | blue/2;
+    private void threshold() {
+        for (int x = 0 ; x < image.getWidth(); x++)
+            for (int y = 0 ; y < image.getHeight() ; y++) {
+                int color = image.getRGB(x, y) & 0xff;
+                if(color < THRESHOLD)
+                    image.setRGB(x, y, 0);
+            }
+    }
 
-        return color;
+    private int avgColors(int a, int b) {
+        int color = (int) Math.sqrt(Math.pow(a & 0xff, 2) + Math.pow(b & 0xff, 2));
+        return 0xff << 24 | color << 16 | color << 8 | color;
     }
 
     public void saveImage() {

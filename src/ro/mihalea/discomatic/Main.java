@@ -15,6 +15,7 @@ public class Main {
                     proc.loadImage(path);
                     proc.presetFilter(ImageProcessor.FILTER_GAUSSIAN);
                     proc.presetFilter(ImageProcessor.FILTER_SOBEL);
+                    proc.presetFilter(ImageProcessor.FILTER_THRESHOLD);
                     proc.saveImage();
                 } catch (Exception ex) {
                     ex.printStackTrace();
