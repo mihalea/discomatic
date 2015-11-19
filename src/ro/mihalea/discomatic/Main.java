@@ -13,7 +13,8 @@ public class Main {
             for (String path : args) {
                 try {
                     proc.loadImage(path);
-                    proc.applyFilter(ImageProcessor.BLUR);
+                    proc.presetFilter(ImageProcessor.FILTER_GAUSSIAN);
+                    proc.presetFilter(ImageProcessor.FILTER_SOBEL);
                     proc.saveImage();
                 } catch (Exception ex) {
                     ex.printStackTrace();
