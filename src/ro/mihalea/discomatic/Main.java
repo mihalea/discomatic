@@ -13,9 +13,7 @@ public class Main {
             for (String path : args) {
                 try {
                     proc.loadImage(path);
-                    proc.presetFilter(ImageProcessor.FILTER_GAUSSIAN);
-                    proc.presetFilter(ImageProcessor.FILTER_SOBEL);
-                    proc.presetFilter(ImageProcessor.FILTER_THRESHOLD);
+                    proc.sobelize();
                     proc.saveImage();
                 } catch (Exception ex) {
                     ex.printStackTrace();

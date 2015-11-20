@@ -60,47 +60,62 @@ public class ImageProcessor {
         savePath = new File(path.substring(0, separator) + "_out." + extension);
     }
 
-    public void presetFilter(int filter) {
-        switch (filter) {
-            case FILTER_BOX:
-                filter(3, 3, BLUR_DATA);
-                break;
-            case FILTER_GAUSSIAN:
-                filter(3, 3, GAUSSIAN_DATA);
-                break;
-            case FILTER_SOBEL:
-                sobel();
-                break;
-            case FILTER_THRESHOLD:
-                threshold();
-                break;
-        }
+    public void sobelize() {
+        this.filter(3, 3, GAUSSIAN_DATA);
+        this.applySobel();
     }
+
 
     private void filter(int sizeX, int sizeY, float[] data) {
         BufferedImageOp op = new ConvolveOp(new Kernel(sizeX, sizeY, data));
         image = op.filter(image, null);
     }
 
-    private void sobel() {
-        BufferedImage grayscale = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
+    private void applySobel() {
+        int width = image.getWidth();
+        int height = image.getHeight();
+
+        BufferedImage grayscale = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
         BufferedImageOp op = new ColorConvertOp(
                 image.getColorModel().getColorSpace(),
                 grayscale.getColorModel().getColorSpace(), null);
         op.filter(image, grayscale);
 
-        op = new ConvolveOp(new Kernel(3, 3, SOBEL_X_DATA));
-        BufferedImage sobelX = op.filter(grayscale, null);
+        double[][] gradient = new double[width][height];
+        int max = -5000;
+        for (int x = 0 ; x < width; x++) {
+            for (int y = 0; y < height; y++) {
 
-        op = new ConvolveOp(new Kernel(3, 3, SOBEL_Y_DATA));
-        BufferedImage sobelY = op.filter(grayscale, null);
+                float sumX = 0;
+                float sumY = 0;
 
-        for (int x = 0 ; x < image.getWidth(); x++)
-            for (int y = 0 ; y < image.getHeight() ; y++) {
-                int cx = sobelX.getRGB(x, y);
-                int cy = sobelY.getRGB(x, y);
-                image.setRGB(x, y, avgColors(cx, cy));
+                for (int ny = -1; ny <= 1; ny++) {
+                    for (int nx = -1; nx <= 1; nx++) {
+                        if (x + nx >= 0 && x + nx < width &&
+                                y + ny >= 0 && y + ny < height) {
+                            sumX += colorToInt(grayscale.getRGB(x + nx, y + ny)) * SOBEL_X_DATA[nx + ny + 2];
+                            sumY += colorToInt(grayscale.getRGB(x + nx, y + ny)) * SOBEL_Y_DATA[nx + ny + 2];
+                        }
+                    }
+                }
+
+                int avg = (int) Math.sqrt(sumX * sumX + sumY * sumY);
+
+                if(avg > max)
+                    max = avg;
+
+                gradient[x][y] = avg;
             }
+        }
+
+        BufferedImage sobel = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
+        for (int x = 0 ; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                sobel.setRGB(x, y, intToColor((int) (gradient[x][y] * max / 100)));
+            }
+        }
+
+        image = sobel;
     }
 
     private void threshold() {
@@ -112,9 +127,12 @@ public class ImageProcessor {
             }
     }
 
-    private int avgColors(int a, int b) {
-        int color = (int) Math.sqrt(Math.pow(a & 0xff, 2) + Math.pow(b & 0xff, 2));
-        return 0xff << 24 | color << 16 | color << 8 | color;
+    private int colorToInt(int color){
+        return color & 0xff;
+    }
+
+    private int intToColor(int integer) {
+        return 0xff << 24 | integer << 16 | integer << 8 | integer;
     }
 
     public void saveImage() {
@@ -124,4 +142,6 @@ public class ImageProcessor {
             System.err.println("Could not save image");
         }
     }
+
+
 }
