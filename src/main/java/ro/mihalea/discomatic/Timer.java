@@ -1,7 +1,7 @@
 package ro.mihalea.discomatic;
 
 /**
- * Created by Mircea on 23-Nov-15.
+ * Class used to find the runtimes of different parts of the code
  */
 public class Timer {
     private String task;

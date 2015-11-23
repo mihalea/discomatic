@@ -5,25 +5,25 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 
 /**
- * Created by Mircea on 23-Nov-15.
+ * Panel handling the drawing of the webcam feed
  */
 public class DiscoPanel extends JPanel {
-    private BufferedImage circle;
-    private BufferedImage sobel;
+    private BufferedImage webcamImage;
+    private BufferedImage sobelFiltered;
 
     @Override
-    public void paint(Graphics g) {         
-        if(sobel != null && circle != null) {
-            g.drawImage(circle, 0, 0, null);
-            g.drawImage(sobel, circle.getWidth(), 0, null);
+    public void paint(Graphics g) {
+        if(sobelFiltered != null && webcamImage != null) {
+            g.drawImage(webcamImage, 0, 0, null);
+            g.drawImage(sobelFiltered, webcamImage.getWidth(), 0, null);
         }
     }
 
-    public void setCircle(BufferedImage circle) {
-        this.circle = circle;
+    public void setWebcamImage(BufferedImage webcamImage) {
+        this.webcamImage = webcamImage;
     }
 
-    public void setSobel(BufferedImage sobel) {
-        this.sobel = sobel;
+    public void setSobelFiltered(BufferedImage sobelFiltered) {
+        this.sobelFiltered = sobelFiltered;
     }
 }

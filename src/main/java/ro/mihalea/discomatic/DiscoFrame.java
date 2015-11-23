@@ -7,7 +7,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 
 /**
- * Created by Mircea on 23-Nov-15.
+ * Frame holding the live gui
  */
 public class DiscoFrame extends JFrame{
     private ImageProcessor processor = new ImageProcessor();
@@ -47,8 +47,8 @@ public class DiscoFrame extends JFrame{
                 processor.loadBuffer(image);
                 processor.findCircle();
 
-                panel.setCircle(processor.getOriginal());
-                panel.setSobel(processor.getImage());
+                panel.setWebcamImage(processor.getOriginal());
+                panel.setSobelFiltered(processor.getProcessed());
 
                 panel.repaint();
             }
