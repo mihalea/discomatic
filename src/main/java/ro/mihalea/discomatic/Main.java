@@ -7,17 +7,17 @@ import java.io.File;
  */
 public class Main {
     public static void main(String[] args){
-        if(args.length <= 0)
-            System.out.println("No image provided");
-        else {
+        if(args.length <= 0) {
+            DiscoFrame frame = new DiscoFrame();
+        } else {
             ImageProcessor proc = new ImageProcessor();
 
             for (String path : args) {
                 try {
                     File file = new File(path);
-                    if(file.isDirectory()) {
+                    if (file.isDirectory()) {
                         for (File f : file.listFiles())
-                            if(f.isFile()) {
+                            if (f.isFile()) {
                                 proc.loadImage(f.getAbsolutePath());
                                 proc.findCircles();
                                 proc.saveImage();
