@@ -15,9 +15,12 @@ import java.nio.file.Paths;
  * Class which handles the applying of  filters on images
  */
 public class ImageProcessor {
+    private Timer timer = new Timer();
+
     private BufferedImage original;
     private BufferedImage image;
     private String basePath;
+    private String fileName;
     private String extension;
 
     private int mx, my, mv;
@@ -60,6 +63,8 @@ public class ImageProcessor {
 
 
     public void loadImage(String path) throws Exception {
+        timer.start("load");
+
         if(!Files.isRegularFile(Paths.get(path)))
             throw new Exception("Image not found!");
 
@@ -85,19 +90,24 @@ public class ImageProcessor {
         System.out.println("Processed size: :" + width + "x" + height);
 
         int separator = path.lastIndexOf(".");
+        int fileSeparator = path.lastIndexOf("\\") + 1;
         extension = path.substring(separator+1);
-        basePath = path.substring(0, separator);
+        basePath = path.substring(0, fileSeparator);
+        fileName = path.substring(fileSeparator, separator);
+
+        timer.stop();
     }
 
     public void findCircles() {
         this.filter(3, 3, GAUSSIAN_DATA);
         this.sobel();
-        //this.threshold();
+        this.threshold();
         this.hough();
         this.drawCircle();
     }
 
     private void drawCircle() {
+        timer.start("circle");
         Graphics2D g = (Graphics2D) original.getGraphics();
         g.setColor(Color.GREEN);
         g.setStroke(new BasicStroke(3));
@@ -109,9 +119,11 @@ public class ImageProcessor {
         g.drawOval(x - r, y - r, r*2, r*2);
         g.drawLine(x - size, y - size, x + size, y + size);
         g.drawLine(x - size, y + size, x + size, y - size);
+        timer.stop();
     }
 
     private void hough() {
+        timer.start("hough");
         final int step = Math.min(image.getHeight(), image.getWidth()) / 2 / HOUGH_RADII;
 
         int radius = step;
@@ -162,7 +174,8 @@ public class ImageProcessor {
             radius += step;
         }
 
-        System.out.println(maxPos.getX() + " " + maxPos.getY() + " " + maxRadius);
+        //System.out.println(maxPos.getX() + " " + maxPos.getY() + " " + maxRadius);
+        timer.stop();
     }
 
     private void printVoting(String name) {
@@ -174,7 +187,7 @@ public class ImageProcessor {
                 //tmp.setRGB(x, y, intToPixel(voting[x][y]));
 
         try {
-            ImageIO.write(tmp, extension, new File("res/" + name));
+            ImageIO.write(tmp, extension, new File(name));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -197,11 +210,15 @@ public class ImageProcessor {
 
 
     private void filter(int sizeX, int sizeY, float[] data) {
+        timer.start("filter");
         BufferedImageOp op = new ConvolveOp(new Kernel(sizeX, sizeY, data));
         image = op.filter(image, null);
+        timer.stop();
     }
 
     private void sobel() {
+        timer.start("sobel");
+
         int width = image.getWidth();
         int height = image.getHeight();
 
@@ -246,15 +263,19 @@ public class ImageProcessor {
         }
 
         image = sobel;
+
+        timer.stop();
     }
 
     private void threshold() {
+        timer.start("threshold");
         for (int x = 0 ; x < image.getWidth(); x++)
             for (int y = 0 ; y < image.getHeight() ; y++) {
                 int color = image.getRGB(x, y) & 0xff;
                 if(color < THRESHOLD)
                     image.setRGB(x, y, 0);
             }
+        timer.stop();
     }
 
     private int pixelToInt(int color){
@@ -266,12 +287,17 @@ public class ImageProcessor {
     }
 
     public void saveImage() {
+        timer.start("save");
         try {
-            ImageIO.write(image, extension, new File(basePath + "_sobel." + extension));
-            ImageIO.write(original, extension, new File(basePath + "_circle." + extension));
+            File out = new File(basePath + "out/");
+            if(!out.isDirectory())
+                out.mkdirs();
+            ImageIO.write(image, extension, new File(basePath + "out/" + fileName + "_sobel." + extension));
+            ImageIO.write(original, extension, new File(basePath + "out/" + fileName + "_circle." + extension));
         } catch (IOException e) {
             System.err.println("Could not save image");
         }
+        timer.stop();
     }
 
 
