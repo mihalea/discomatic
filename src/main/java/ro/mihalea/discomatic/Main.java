@@ -7,7 +7,7 @@ import java.io.File;
 public class Main {
     public static void main(String[] args){
         if(args.length <= 0) {
-            DiscoCam cam = new DiscoCam();
+            DiscoFrame cam = new DiscoFrame();
         } else {
             ImageProcessor proc = new ImageProcessor();
 
@@ -18,12 +18,12 @@ public class Main {
                         for (File f : file.listFiles())
                             if (f.isFile()) {
                                 proc.loadImage(f.getAbsolutePath());
-                                proc.findCircles();
+                                proc.findCircle();
                                 proc.saveImage();
                             }
                     } else {
                         proc.loadImage(path);
-                        proc.findCircles();
+                        proc.findCircle();
                         proc.saveImage();
                     }
                 } catch (Exception ex) {

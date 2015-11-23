@@ -112,7 +112,7 @@ public class ImageProcessor {
         return image;
     }
 
-    public void findCircles() {
+    public void findCircle() {
         this.filter(3, 3, GAUSSIAN_DATA);
         this.sobel();
         this.threshold();
