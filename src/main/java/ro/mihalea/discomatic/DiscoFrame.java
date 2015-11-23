@@ -25,7 +25,7 @@ public class DiscoFrame extends JFrame{
         this.setResizable(true);
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         this.pack();
-        this.setSize(new Dimension(1280, 480));
+        this.setSize(new Dimension(640 + 500, 480));
         this.setVisible(true);
     }
 
