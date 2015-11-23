@@ -28,9 +28,9 @@ public class ImageProcessor {
 
     private float scaling = 1;
 
-    private final static int THRESHOLD = 50;
+    private final static int THRESHOLD = 100;
 
-    private final static int HOUGH_RADII = 50;
+    private final static int HOUGH_RADII = 20;
 
     private final static int MAX_WIDTH = 500;
     private final static int MAX_HEIGHT = 500;

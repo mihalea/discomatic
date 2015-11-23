@@ -17,25 +17,10 @@ public class DiscoCam extends JFrame{
     private JPanel container;
     private Webcam cam;
     private WebcamPanel panel;
-    private ImageIcon image;
 
     public DiscoCam() {
         this.setupCam();
         this.setupFrame();
-        this.startSobel();
-    }
-
-    private void startSobel() {
-        while(true) {
-            try {
-                BufferedImage image = cam.getImage();
-                processor.loadBuffer(image);
-                processor.findCircles();
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     private void setupFrame() {
@@ -52,7 +37,7 @@ public class DiscoCam extends JFrame{
         c.gridy = 0;
 
         cam = Webcam.getDefault();
-        cam.setViewSize(new Dimension(320, 240));
+        cam.setViewSize(WebcamResolution.VGA.getSize());
         cam.open(true);
 
         panel = new WebcamPanel(cam);
