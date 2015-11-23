@@ -1,7 +1,10 @@
 package ro.mihalea.discomatic;
 
+import com.sun.imageio.plugins.common.ImageUtil;
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import java.awt.*;
 import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
@@ -12,21 +15,25 @@ import java.nio.file.Paths;
  * Class which handles the applying of  filters on images
  */
 public class ImageProcessor {
+    private BufferedImage original;
     private BufferedImage image;
-    private File savePath;
+    private String basePath;
     private String extension;
 
-    public final static int FILTER_BOX = 0;
-    public final static int FILTER_GAUSSIAN = 1;
-    public final static int FILTER_SOBEL = 2;
-    public final static int FILTER_THRESHOLD = 3;
+    private int mx, my, mv;
+    private int maxRadius, maxValue;
+    private Point maxPos = new Point(-1, -1);
+    private int[][] voting;
 
-    private final static int THRESHOLD = 200;
+    private final static int THRESHOLD = 150;
+
+    private final static int HOUGH_RADII = 10;
 
     private final static float[] BLUR_DATA = new float[] {
             1/9f, 1/9f, 1/9f,
             1/9f, 1/9f, 1/9f,
             1/9f, 1/9f, 1/9f};
+
     private final static float[] GAUSSIAN_DATA = new float[] {
             1/16f, 1/8f, 1/16f,
             1/8f,  1/4f, 1/8f,
@@ -53,16 +60,110 @@ public class ImageProcessor {
 
         ImageIcon icon = new ImageIcon(path);
         image = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_RGB);
+        original = image;
         icon.paintIcon(null, image.getGraphics(), 0, 0);
 
         int separator = path.lastIndexOf(".");
-        extension = path.substring(separator + 1);
-        savePath = new File(path.substring(0, separator) + "_out." + extension);
+        extension = path.substring(separator);
+        basePath = path.substring(0, separator);
     }
 
-    public void sobelize() {
+    public void findCircles() {
         this.filter(3, 3, GAUSSIAN_DATA);
-        this.applySobel();
+        this.sobel();
+        this.threshold();
+        this.hough();
+        this.drawCircle();
+    }
+
+    private void drawCircle() {
+        Graphics g = original.getGraphics();
+        g.fillOval((int) maxPos.getX(), (int) maxPos.getY(), maxRadius, maxRadius);
+    }
+
+    private void hough() {
+        final int step = Math.min(image.getHeight(), image.getWidth()) / 2 / HOUGH_RADII;
+
+        int radius = step;
+
+
+        maxValue = -1;
+        mv = 0;
+
+        for (int i=1 ; i<HOUGH_RADII ; i++) {
+            System.out.println("RADIUS: " + radius);
+            voting = new int[image.getWidth()][image.getHeight()];
+
+            for (int ox=0 ; ox < image.getWidth() ; ox++) {
+                for (int oy = 0; oy < image.getHeight(); oy++) {
+                    if (pixelToInt(image.getRGB(ox, oy)) != 0) {
+                        int x = radius;
+                        int y = 0;
+                        int d = 1 - x;
+
+                        while (y <= x) {
+                            checkPixel(x + ox, y + oy);
+                            checkPixel(y + ox, x + oy);
+                            checkPixel(-x + ox, y + oy);
+                            checkPixel(-y + ox, x + oy);
+                            checkPixel(-x + ox, -y + oy);
+                            checkPixel(-y + ox, -x + oy);
+                            checkPixel(x + ox, -y + oy);
+                            checkPixel(y + ox, -x + oy);
+                            y++;
+
+                            if (d <= 0)
+                                d += 2 * y + 1;
+                            else {
+                                x--;
+                                d += 2 * (y - x) + 1;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if(mv > maxValue) {
+                maxRadius = radius;
+                maxValue = mv;
+                maxPos.setLocation(mx, my);
+            }
+
+            printVoting("radius" + radius + "." + extension);
+            radius += step;
+        }
+
+        System.out.println(maxPos.getX() + " " + maxPos.getY() + " " + maxRadius);
+    }
+
+    private void printVoting(String name) {
+        BufferedImage tmp = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
+
+        for (int x=0 ; x<tmp.getWidth() ; x++)
+            for (int y=0 ; y<tmp.getHeight() ; y++)
+                tmp.setRGB(x, y, voting[x][y] != 0 ? 255 : 0);
+                //tmp.setRGB(x, y, intToPixel(voting[x][y]));
+
+        try {
+            ImageIO.write(tmp, extension, new File("res/" + name));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void checkPixel(int x, int y) {
+        if(x >= 0 && x < image.getWidth() &&
+                y >= 0 && y < image.getHeight()) {
+            int v = ++voting[x][y];
+
+            if (v > mv) {
+                mx = x;
+                my = y;
+                mv = v;
+            }
+        }
+
     }
 
 
@@ -71,7 +172,7 @@ public class ImageProcessor {
         image = op.filter(image, null);
     }
 
-    private void applySobel() {
+    private void sobel() {
         int width = image.getWidth();
         int height = image.getHeight();
 
@@ -83,8 +184,8 @@ public class ImageProcessor {
 
         double[][] gradient = new double[width][height];
         int max = -5000;
-        for (int x = 0 ; x < width; x++) {
-            for (int y = 0; y < height; y++) {
+        for (int x = 2 ; x < width - 2; x++) {
+            for (int y = 2; y < height - 2; y++) {
 
                 float sumX = 0;
                 float sumY = 0;
@@ -93,8 +194,8 @@ public class ImageProcessor {
                     for (int nx = -1; nx <= 1; nx++) {
                         if (x + nx >= 0 && x + nx < width &&
                                 y + ny >= 0 && y + ny < height) {
-                            sumX += colorToInt(grayscale.getRGB(x + nx, y + ny)) * SOBEL_X_DATA[nx + ny + 2];
-                            sumY += colorToInt(grayscale.getRGB(x + nx, y + ny)) * SOBEL_Y_DATA[nx + ny + 2];
+                            sumX += pixelToInt(grayscale.getRGB(x + nx, y + ny)) * SOBEL_X_DATA[nx + (ny + 1) * 3 + 1];
+                            sumY += pixelToInt(grayscale.getRGB(x + nx, y + ny)) * SOBEL_Y_DATA[nx + (ny + 1) * 3 + 1];
                         }
                     }
                 }
@@ -111,7 +212,7 @@ public class ImageProcessor {
         BufferedImage sobel = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
         for (int x = 0 ; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                sobel.setRGB(x, y, intToColor((int) (gradient[x][y] * max / 100)));
+                sobel.setRGB(x, y, intToPixel((int) (gradient[x][y] * 255 / max)));
             }
         }
 
@@ -127,17 +228,18 @@ public class ImageProcessor {
             }
     }
 
-    private int colorToInt(int color){
+    private int pixelToInt(int color){
         return color & 0xff;
     }
 
-    private int intToColor(int integer) {
+    private int intToPixel(int integer) {
         return 0xff << 24 | integer << 16 | integer << 8 | integer;
     }
 
     public void saveImage() {
         try {
-            ImageIO.write(image, extension, savePath);
+            ImageIO.write(image, extension, new File(basePath + "_sobel" + extension));
+            //ImageIO.write(original, extension, new File(basePath + "_circle" + extension));
         } catch (IOException e) {
             System.err.println("Could not save image");
         }

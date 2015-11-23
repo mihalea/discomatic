@@ -13,7 +13,7 @@ public class Main {
             for (String path : args) {
                 try {
                     proc.loadImage(path);
-                    proc.sobelize();
+                    proc.findCircles();
                     proc.saveImage();
                 } catch (Exception ex) {
                     ex.printStackTrace();
