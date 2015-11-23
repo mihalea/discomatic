@@ -1,7 +1,5 @@
 package ro.mihalea.discomatic;
 
-import com.sun.imageio.plugins.common.ImageUtil;
-
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
@@ -30,9 +28,9 @@ public class ImageProcessor {
 
     private float scaling = 1;
 
-    private final static int THRESHOLD = 100;
+    private final static int THRESHOLD = 50;
 
-    private final static int HOUGH_RADII = 20;
+    private final static int HOUGH_RADII = 50;
 
     private final static int MAX_WIDTH = 500;
     private final static int MAX_HEIGHT = 500;
@@ -60,17 +58,11 @@ public class ImageProcessor {
              1,  2,  1,
     };
 
+    public void loadBuffer(BufferedImage buffer) {
+        original = buffer;
 
-
-    public void loadImage(String path) throws Exception {
-        timer.start("load");
-
-        if(!Files.isRegularFile(Paths.get(path)))
-            throw new Exception("Image not found!");
-
-        ImageIcon icon = new ImageIcon(path);
-        int width = icon.getIconWidth();
-        int height = icon.getIconHeight();
+        int width = buffer.getWidth();
+        int height = buffer.getHeight();
         if(width > MAX_WIDTH || height > MAX_HEIGHT) {
             scaling = Math.max(width * 1f / MAX_WIDTH, height * 1f / MAX_HEIGHT);
             width /= scaling;
@@ -79,15 +71,29 @@ public class ImageProcessor {
             scaling = 1;
         }
 
-        original = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_RGB);
-        icon.paintIcon(null, original.getGraphics(), 0, 0);
-
         image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = image.createGraphics();
-        g.drawImage(original, 0, 0, width, height, null);
+        g.drawImage(buffer, 0, 0, width, height, null);
         g.dispose();
 
         System.out.println("Processed size: :" + width + "x" + height);
+
+
+    }
+
+    public void loadImage(String path) throws Exception {
+        timer.start("load");
+
+        if(!Files.isRegularFile(Paths.get(path)))
+            throw new Exception("Image not found!");
+
+        ImageIcon icon = new ImageIcon(path);
+
+
+        original = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_RGB);
+        icon.paintIcon(null, original.getGraphics(), 0, 0);
+
+        loadBuffer(original);
 
         int separator = path.lastIndexOf(".");
         int fileSeparator = path.lastIndexOf("\\") + 1;
@@ -96,6 +102,14 @@ public class ImageProcessor {
         fileName = path.substring(fileSeparator, separator);
 
         timer.stop();
+    }
+
+    public BufferedImage getOriginal() {
+        return original;
+    }
+
+    public BufferedImage getImage() {
+        return image;
     }
 
     public void findCircles() {
@@ -175,6 +189,7 @@ public class ImageProcessor {
         }
 
         //System.out.println(maxPos.getX() + " " + maxPos.getY() + " " + maxRadius);
+        System.out.println("Radius: " + maxRadius);
         timer.stop();
     }
 

@@ -1,14 +1,13 @@
 package ro.mihalea.discomatic;
 
 import java.io.File;
-
 /**
  * Main entry point for the program
  */
 public class Main {
     public static void main(String[] args){
         if(args.length <= 0) {
-            DiscoFrame frame = new DiscoFrame();
+            DiscoCam cam = new DiscoCam();
         } else {
             ImageProcessor proc = new ImageProcessor();
 
