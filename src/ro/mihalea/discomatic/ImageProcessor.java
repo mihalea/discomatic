@@ -25,9 +25,14 @@ public class ImageProcessor {
     private Point maxPos = new Point(-1, -1);
     private int[][] voting;
 
-    private final static int THRESHOLD = 150;
+    private float scaling = 1;
 
-    private final static int HOUGH_RADII = 10;
+    private final static int THRESHOLD = 100;
+
+    private final static int HOUGH_RADII = 20;
+
+    private final static int MAX_WIDTH = 500;
+    private final static int MAX_HEIGHT = 500;
 
     private final static float[] BLUR_DATA = new float[] {
             1/9f, 1/9f, 1/9f,
@@ -59,26 +64,51 @@ public class ImageProcessor {
             throw new Exception("Image not found!");
 
         ImageIcon icon = new ImageIcon(path);
-        image = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_RGB);
-        original = image;
-        icon.paintIcon(null, image.getGraphics(), 0, 0);
+        int width = icon.getIconWidth();
+        int height = icon.getIconHeight();
+        if(width > MAX_WIDTH || height > MAX_HEIGHT) {
+            scaling = Math.max(width * 1f / MAX_WIDTH, height * 1f / MAX_HEIGHT);
+            width /= scaling;
+            height /= scaling;
+        } else {
+            scaling = 1;
+        }
+
+        original = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_RGB);
+        icon.paintIcon(null, original.getGraphics(), 0, 0);
+
+        image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = image.createGraphics();
+        g.drawImage(original, 0, 0, width, height, null);
+        g.dispose();
+
+        System.out.println("Processed size: :" + width + "x" + height);
 
         int separator = path.lastIndexOf(".");
-        extension = path.substring(separator);
+        extension = path.substring(separator+1);
         basePath = path.substring(0, separator);
     }
 
     public void findCircles() {
         this.filter(3, 3, GAUSSIAN_DATA);
         this.sobel();
-        this.threshold();
+        //this.threshold();
         this.hough();
         this.drawCircle();
     }
 
     private void drawCircle() {
-        Graphics g = original.getGraphics();
-        g.fillOval((int) maxPos.getX(), (int) maxPos.getY(), maxRadius, maxRadius);
+        Graphics2D g = (Graphics2D) original.getGraphics();
+        g.setColor(Color.GREEN);
+        g.setStroke(new BasicStroke(3));
+
+        int size = 5;
+        int x = (int) (maxPos.getX() * scaling);
+        int y = (int) (maxPos.getY() * scaling);
+        int r = (int) (maxRadius * scaling) ;
+        g.drawOval(x - r, y - r, r*2, r*2);
+        g.drawLine(x - size, y - size, x + size, y + size);
+        g.drawLine(x - size, y + size, x + size, y - size);
     }
 
     private void hough() {
@@ -91,7 +121,6 @@ public class ImageProcessor {
         mv = 0;
 
         for (int i=1 ; i<HOUGH_RADII ; i++) {
-            System.out.println("RADIUS: " + radius);
             voting = new int[image.getWidth()][image.getHeight()];
 
             for (int ox=0 ; ox < image.getWidth() ; ox++) {
@@ -129,7 +158,7 @@ public class ImageProcessor {
                 maxPos.setLocation(mx, my);
             }
 
-            printVoting("radius" + radius + "." + extension);
+            //printVoting("radius" + radius + "." + extension);
             radius += step;
         }
 
@@ -238,8 +267,8 @@ public class ImageProcessor {
 
     public void saveImage() {
         try {
-            ImageIO.write(image, extension, new File(basePath + "_sobel" + extension));
-            //ImageIO.write(original, extension, new File(basePath + "_circle" + extension));
+            ImageIO.write(image, extension, new File(basePath + "_sobel." + extension));
+            ImageIO.write(original, extension, new File(basePath + "_circle." + extension));
         } catch (IOException e) {
             System.err.println("Could not save image");
         }
