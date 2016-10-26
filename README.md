@@ -1,5 +1,5 @@
 # discomatic
-This is a practice program used to find circles in static images or images fed from a webcam using the Sobel operator and the Hough Transform.
+This is a program used to find circles in static images or images fed from a webcam using the Sobel operator and the Hough Transform.
 The process of finding them can be summarised as it follows:
 
 * Scale the image down if it is too big
